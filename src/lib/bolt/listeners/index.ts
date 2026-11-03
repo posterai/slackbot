@@ -1,20 +1,10 @@
 import type { App } from "@slack/bolt";
-import actions from "./actions";
-import assistant from "./assistant";
-import commands from "./commands";
+import { features } from "@/features";
 import events from "./events";
-import messages from "./messages";
-import shortcuts from "./shortcuts";
-import views from "./views";
 
 const registerListeners = (app: App) => {
-  actions.register(app);
-  assistant.register(app);
-  commands.register(app);
   events.register(app);
-  messages.register(app);
-  shortcuts.register(app);
-  views.register(app);
+  for (const feature of features) feature.register(app);
 };
 
 export default registerListeners;

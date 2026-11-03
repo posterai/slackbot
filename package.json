@@ -1,5 +1,5 @@
 {
-  "name": "slack-bolt-with-next",
+  "name": "posterchild-slackbot",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,17 +8,17 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/devtools": "^0.0.15",
-    "@ai-sdk/gateway": "^3.0.55",
-    "@ai-sdk/mcp": "^1.0.21",
-    "@ai-sdk/openai": "^3.0.34",
+    "@octokit/auth-app": "^8.3.1",
+    "@octokit/rest": "^22.0.1",
     "@slack/bolt": "^4.6.0",
+    "@slack/types": "^3.3.0",
     "@slack/web-api": "^7.14.1",
     "@vercel/slack-bolt": "1.1.0",
-    "ai": "^6.0.99",
+    "e2b": "^2.62.1",
     "express": "^5.2.1",
     "next": "16.1.6",
     "react": "19.2.4",
@@ -36,6 +36,7 @@
     "dotenv": "^17.3.1",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
   }
 }

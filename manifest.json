@@ -4,78 +4,39 @@
     "minor_version": 1
   },
   "display_information": {
-    "name": "OpenBot"
+    "name": "PosterChild",
+    "description": "PosterChild's internal tools in Slack.",
+    "background_color": "#1d1c1d"
   },
   "features": {
-    "assistant_view": {
-      "assistant_description": "An AI assistant powered by the Slack MCP and AI SDK by Vercel."
-    },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": false,
       "messages_tab_read_only_enabled": true
     },
     "bot_user": {
-      "display_name": "OpenBot",
+      "display_name": "PosterChild",
       "always_online": true
     },
-    "shortcuts": [
-      {
-        "name": "Run sample shortcut",
-        "type": "global",
-        "callback_id": "sample_shortcut_id",
-        "description": "Runs a sample shortcut"
-      }
-    ],
     "slash_commands": [
       {
-        "command": "/sample-command",
-        "description": "Runs a sample command",
-        "should_escape": false, 
+        "command": "/sandbox",
+        "description": "Start, pause, delete or list review sandboxes",
+        "usage_hint": "[status | up|stop|destroy <#PR or name> | help]",
+        "should_escape": false,
         "url": "https://<your-domain>/api/slack/events"
       }
     ]
   },
- "oauth_config": {
-  "scopes": {
-    "user": [
-      "canvases:read",
-      "canvases:write",
-      "channels:history",
-      "chat:write",
-      "groups:history",
-      "im:history",
-      "mpim:history",
-      "search:read.files",
-      "search:read.im",
-      "search:read.mpim",
-      "search:read.private",
-      "search:read.public",
-      "search:read.users",
-      "users:read",
-      "users:read.email"
-    ],
-    "bot": [
-      "assistant:write",
-      "channels:history",
-      "chat:write",
-      "commands",
-      "groups:history",
-      "im:history",
-      "mpim:history"
-    ]
-  }
-},
+  "oauth_config": {
+    "scopes": {
+      "bot": ["chat:write", "commands"]
+    }
+  },
   "settings": {
     "event_subscriptions": {
       "request_url": "https://<your-domain>/api/slack/events",
-      "bot_events": [
-        "app_home_opened",
-        "assistant_thread_context_changed",
-        "assistant_thread_started",
-        "message.channels",
-        "message.im"
-      ]
+      "bot_events": ["app_home_opened"]
     },
     "interactivity": {
       "is_enabled": true,

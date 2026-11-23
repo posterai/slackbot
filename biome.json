@@ -7,7 +7,13 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"]
+    "includes": [
+      "next-env.d.ts",
+      "**/*.ts",
+      "**/*.tsx",
+      "!**/.next",
+      "!**/.agents/**/*"
+    ]
   },
   "formatter": {
     "enabled": true,

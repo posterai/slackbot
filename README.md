@@ -1,85 +1,93 @@
-# Slack Bolt with Next.js Template
+# PosterChild Slack bot
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?demo-description=This%20is%20a%20generic%20Bolt%20for%20JavaScript%20(TypeScript)%20template%20app%20used%20to%20build%20out%20Slack%20apps%20with%20Next.js&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F1BL852bc5uyQQuswDrLggh%2F7f91aaaebace15775b982649b153354a%2FFrame.png&demo-title=Slack%20Bolt%20with%20Next.js&demo-url=https%3A%2F%2Fgithub.com%2Fvercel-partner-solutions%2Fslack-bolt-with-nextjs&env=SLACK_SIGNING_SECRET%2CSLACK_BOT_TOKEN&envDescription=These%20environment%20variables%20are%20required%20to%20deploy%20your%20Slack%20app%20to%20Vercel&envLink=https%3A%2F%2Fapi.slack.com%2Fapps&from=templates&project-name=Slack%20Bolt%20with%20Next.js&project-names=Comma%20separated%20list%20of%20project%20names%2Cto%20match%20the%20root-directories&repository-name=slack-bolt-with-next-js&repository-url=https%3A%2F%2Fgithub.com%2Fvercel-partner-solutions%2Fslack-bolt-with-nextjs&root-directories=List%20of%20directory%20paths%20for%20the%20directories%20to%20clone%20into%20projects&skippable-integrations=1&teamSlug=vercel-partnerships)
+PosterChild's internal tools in Slack. A [Bolt for JavaScript](https://slack.dev/bolt-js) app on Next.js, deployed to Vercel.
 
-This is a generic Bolt for JavaScript (TypeScript) template app used to build Slack apps with Next.js
+Each capability is a **feature** in `src/features/`. The first one is **review sandboxes**: anyone in the sandbox channel can start, pause or delete a working copy of PosterChild for a pcaicode PR, and see every sandbox's status, with no CLI or GitHub access needed.
 
-Before getting started, make sure you have a development workspace where you have permissions to install apps. You can use a [developer sandbox](https://api.slack.com/developer-program) or [create a workspace](https://slack.com/create)
+## Review sandboxes (`/sandbox`)
 
-## Installation
+| Command | What it does |
+|---|---|
+| `/sandbox` | Opens a picker: choose a feature (by PR title) and Start/resume, Pause or Delete. |
+| `/sandbox status` | Lists every sandbox with its state, when it pauses, its link and password, and buttons to act on it. |
+| `/sandbox up #917` | Quick path. Also `stop`/`destroy`, and the argument can be a PR number, branch or part of the PR title. |
+| `/sandbox help` | Usage. |
 
-### Clone and install dependencies
+- **Which sandboxes are offered:** open, non-draft pcaicode PRs with the `sandbox` label, plus any sandbox that already exists. To make a feature available, label its PR.
+- **How it works:**
+  1. The bot posts the request in the channel.
+  2. It dispatches pcaicode's `.github/workflows/sandbox.yml` (via the GitHub App) with that message as the thread to reply in.
+  3. The workflow posts the URL and password, or a failure link, in the thread.
+  - Status comes straight from E2B: pcaicode's sandbox CLI stores the branch and password as sandbox metadata. See pcaicode doc-015.
+- **Where it works:** only in channels listed in `SANDBOX_ALLOWED_CHANNEL_IDS`. Elsewhere it answers privately with a pointer to the channel. Deleting asks for confirmation.
+
+## Setup
+
+### 1. GitHub App (owned by the posterai org, not a person)
+
+1. Go to **github.com/organizations/posterai/settings/apps** and click **New GitHub App**.
+   - Name: "PosterChild bot". Homepage: any URL. **Webhook: off.**
+   - Repository permissions: **Actions: Read and write**, **Pull requests: Read-only**, **Contents: Read-only** (Metadata: Read-only is automatic).
+   - Where can this app be installed: *Only on this account*.
+2. Generate a private key (`.pem`) and note the App ID.
+3. **Install App** on `posterai` with **Only select repositories**: `pcaicode`. Add repos later for new features. The installation ID is the number at the end of the installation page's URL.
+
+### 2. Slack app
+
+1. Go to https://api.slack.com/apps/new → *From an app manifest*, then paste [`manifest.json`](./manifest.json).
+2. Install it to the workspace, copy the **Bot User OAuth Token** (`SLACK_BOT_TOKEN`) and, under Basic Information, the **Signing Secret** (`SLACK_SIGNING_SECRET`).
+3. Invite the bot to the sandbox channel (`/invite @PosterChild`). Put the channel's ID in `SANDBOX_ALLOWED_CHANNEL_IDS`.
+4. In pcaicode, set the `SLACK_SANDBOX_BOT_TOKEN` secret to this bot token, so the workflow's replies come from the same bot.
+
+### 3. Environment
+
+Copy [`.env.example`](./.env.example) to `.env.local` for local dev, or set the same variables in Vercel. Required:
+
+- `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN`.
+- `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` and `GITHUB_APP_INSTALLATION_ID`.
+- `SANDBOX_ALLOWED_CHANNEL_IDS` and `E2B_API_KEY`.
+
+The other `SANDBOX_*` variables have defaults that match pcaicode. Config is checked on first use, and a missing variable shows up as a clear error in the logs.
+
+### 4. Run locally
+
 ```bash
-git clone https://github.com/vercel-partner-solutions/slack-bolt-with-next.git && cd slack-bolt-with-next && pnpm install
+pnpm install
+pnpm dev:tunnel   # Next.js + an ngrok tunnel; points the dev app's manifest URLs at it
 ```
 
-### Create a Slack App
+Or with the Slack CLI: `slack app link`, then `slack run`; `.slack/hooks.json` uses the tunnel script.
 
-1. Open https://api.slack.com/apps/new and choose "From an app manifest"
-2. Choose the workspace you want to use
-3. Copy the contents of [`manifest.json`](./manifest.json) into the text box that says "Paste your manifest code here" (JSON tab) and click Next
-4. Review the configuration and click Create
-5. On the Install App tab, click Install to <Workspace_Name>. 
-      - You will be redirected to the App Configuration dashboard
-6. Copy the Bot User OAuth Token into your environment as `SLACK_BOT_TOKEN`
-7. On the Basic Information tab, copy your Signing Secret into your environment as `SLACK_SIGNING_SECRET`
+### 5. Deploy
 
-### Prepare for Local Development
+1. Import the repo in Vercel and set the environment variables.
+2. In the Slack app's manifest, set every `url`/`request_url` to `https://<your-vercel-domain>/api/slack/events`.
 
-1. Add your `NGROK_AUTH_TOKEN` to your `.env` file
-    - You can get a free token [here](https://dashboard.ngrok.com/login?state=X1FFBj9sgtS9-oFK_2-h15Xcg0zHPjp_b9edWYrpGBVvIluUPEAarKRIjpp8ZeCHNTljTyreeslpG6n8anuSCFUkgIxwLypEGOa4Ci_cmnXYLhOfYogHWB6TzWBYUmhFLPW0XeGn789mFV_muomVd7QizkgwuYW8Vz2wW315YIK5UPywQaIGFKV8)
-2. In the terminal run `slack app link`
-3. If prompted `update the manifest source to remote` select `yes`
-4. Copy your App ID from the app you just created
-5. Select `Local` when prompted
-6. Open [`.slack/config.json`](./.slack/config.json) and update your manifest source to `local`
-```json
-{
-  "manifest": {
-    "source": "local"
-  },
-  "project_id": "<project-id-added-by-slack-cli>"
-}
+## Development
+
+```bash
+pnpm test    # vitest
+pnpm lint    # biome
+pnpm build
 ```
-7. Start your local server using `slack run`. If prompted, select the workspace you'd like to grant access to 
-- Select `yes` if asked "Update app settings with changes to the local manifest?"
-8. Open your Slack workspace, add your Slackbot to a channel, and send `hello`. Your app should reply with `world!`
 
-## Deploy to Vercel
+### Adding a feature
 
-1. Create a new Slack app for production following the steps from above
-2. Create a new Vercel project [here](https://vercel.com/new) and select this repo
-2. Copy the Bot User OAuth Token into your Vercel environment variables as `SLACK_BOT_TOKEN`
-3. On the Basic Information tab, copy your Signing Secret into your Vercel environment variables as `SLACK_SIGNING_SECRET`
-4. When your deployment has finished, open your App Manifest from the Slack App Dashboard
-5. Update the manifest so all the `request_url` and `url` fields use `https://<your-app-domain>/api/slack/events`
-6. Click save and you will be prompted to verify the URL
-7. Open your Slack workspace and add your app to any channel
-    - _Note_: Make sure you add the production app, not the local app we setup earlier
-8. Send `hello` and your app will respond with `world!`
-9. Your app will now automatically build and deploy whenever you commit to your repo. More information [here](https://vercel.com/docs/git)
+1. Create `src/features/<name>/index.ts` exporting a `Feature` (`src/features/types.ts`):
+   - `name` and `description`: the description appears in the Home tab's "What I can do".
+   - `register(app)`: add commands, actions, views and events with Bolt.
+   - `homeBlocks(userId)` (optional): its own Home tab section.
+2. Add it to `src/features/index.ts`.
+3. Add any slash commands, scopes or events to `manifest.json`.
+4. For config, use `defineConfig` from `src/lib/config.ts`. For GitHub, use `getOctokit()` from `src/lib/github.ts` and grant the GitHub App any new permissions or repos.
 
+### Layout
 
-## Project Structure
-
-### [`manifest.json`](./manifest.json)
-
-[`manifest.json`](./manifest.json) defines your Slack app's configuration. With a manifest, you can create or update an app with a pre-defined configuration
-
-### [`src/bolt/app.ts`](./src/bolt/app.ts)
-
-This is the Bolt app entry. It initializes `@vercel/slack-bolt`'s `VercelReceiver` and registers listeners
-
-### [`src/bolt/listeners`](./src/bolt/listeners)
-
-Every incoming request is routed to a "listener". Inside this directory, we group each listener by Slack Platform feature, e.g. [`messages`](./src/bolt/listeners/messages) for message events
-
-### Route Handler: [`src/app/api/slack/events/route.ts`](./src/app/api/slack/events/route.ts)
-
-This file defines your Next.js Route Handler that receives Slack events. Its pathname matches the URLs defined in your [`manifest.json`](./manifest.json). Next.js uses file-based routing for API handlers. Learn more in the Next.js docs: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
-
-## Custom Scripts
-- `pnpm dev:tunnel`: A helper script to automatically start your Slack app with ngrok tunneling
-
-## Notes
-- If you see a warning about `express` being externalized: `@slack/bolt` ships an Express receiver. Turbopack may analyze its static import even if you don't use it. Keeping `express` as a dependency or aliasing it to a stub resolves this during development.
+- `src/app/api/slack/events/route.ts`: the one endpoint for Slack events, commands and interactivity.
+- `src/lib/bolt/app.ts`: the Bolt app with `@vercel/slack-bolt`'s `VercelReceiver`.
+- `src/lib/bolt/listeners/`: app-wide listeners (Home tab) and feature registration.
+- `src/features/sandbox/`, which contains:
+  - `catalog.ts`: labeled PRs + E2B sandboxes, and name resolution.
+  - `run.ts`: posting and dispatching.
+  - `views.ts`: Block Kit.
+  - `handlers.ts`: Bolt listeners.
